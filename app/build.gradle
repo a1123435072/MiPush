@@ -1,0 +1,89 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.greenrobot.greendao'
+
+android {
+    compileSdkVersion rootProject.ext.targetSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    defaultConfig {
+        applicationId "com.xiaomi.xmsf"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        // XMPush sdk requires XMPushService not exported, but sdk will start exported XMPushService after
+        // XMSF version code 106. SDK will also check version code must >= 105.
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        resConfigs "zh"
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    greendao{
+        schemaVersion 4
+        daoPackage 'top.trumeet.mipushframework.db'
+        targetGenDir 'src/main/java'
+    }
+    signingConfigs {
+        debug {
+            try {
+                Properties properties = new Properties()
+                properties.load(project.rootProject.file('local.properties').newDataInputStream())
+                storeFile file(properties.getProperty('KEY_LOCATE'))
+                storePassword properties.getProperty('KEYSTORE_PASSWORD')
+                keyAlias properties.getProperty('KEYSTORE_ALIAS')
+                keyPassword properties.getProperty('KEY_PASSWORD')
+            }
+            catch (ignored) {
+                throw new InvalidUserDataException("You should define KEYSTORE_PASSWORD and KEY_PASSWORD in local.properties.")
+            }
+        }
+        release {
+            // 满足下面两个条件时需要此配置
+            // 1. Gradle版本 >= 2.14.1
+            // 2. Android Gradle Plugin 版本 >= 2.2.0
+            // 作用是只使用旧版签名，禁用V2版签名模式
+            v2SigningEnabled false
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile('com.github.AndroidSnippet:SetupWizardLibCompat:0.3', {
+        exclude group: 'com.android.support'
+    })
+    // GreenDao
+    implementation 'org.greenrobot:greendao:3.2.2'
+    compile 'com.github.yuweiguocn:GreenDaoUpgradeHelper:v2.0.0'
+    // Recycler
+    implementation('me.drakeet.multitype:multitype:3.3.0', {
+        exclude group: 'com.android.support'
+    })
+    // Support
+    implementation "com.android.support:recyclerview-v7:$supportLibraryVersion"
+    implementation "com.android.support:appcompat-v7:$supportLibraryVersion"
+    // 保♂险♂套
+    compile project(':condom')
+    // Preference
+    implementation 'moe.shizuku.preference:preference:2.0.2'
+    implementation 'moe.shizuku.preference:preference-switchcompat:2.0.2'
+    implementation 'moe.shizuku.preference:preference-dialog-android:2.0.2'
+    implementation 'moe.shizuku.preference:preference-simplemenu:2.0.2'
+    // Log
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    compile 'com.github.tony19:logback-android-core:1.1.1-6'
+    compile('com.github.tony19:logback-android-classic:1.1.1-6') {
+        // workaround issue #73
+        exclude group: 'com.google.android', module: 'android'
+    }
+    // Markdown
+    compile 'com.zzhoujay.richtext:richtext:2.5.4'
+}
